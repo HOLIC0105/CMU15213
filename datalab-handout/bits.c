@@ -143,7 +143,12 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  int a = x & y;
+  int b = ~a;
+  int c = (~x) & (~y);
+  int d = ~c;
+  int ans = b & d;
+  return ans;
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -152,9 +157,7 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-
-  return 2;
-
+  return (1 << 31);
 }
 //2
 /*
@@ -165,7 +168,10 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  int a = x + 1;
+  int b = ~a;
+  int c = b + 1;
+  return !(a ^ c) ^ (!a);
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -176,7 +182,17 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int a = x >> 16;
+  int A = x & a;
+  int b = A >> 8;
+  int B = A & b;
+  int c = B >> 4;
+  int C = B & c;
+  int d = C >> 2;
+  int D = C & d;
+  int Ans = D & 2;
+  int ans = Ans >> 1;
+  return ans;
 }
 /* 
  * negate - return -x 
@@ -186,7 +202,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1;
 }
 //3
 /* 
@@ -199,7 +215,17 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int a = x >> 8;
+  int flag1 = !a; //是否有多余位数
+  int b = (x & 0xff) >> 4;
+  int flag2 = !(b ^ 0x3);
+  int c = x & 8;
+  int d = x & 6;
+  int Flag1 = !c;
+  int Flag2 = !d;
+  int flag3 = Flag1 | Flag2;
+  int ans = flag1 & flag2 & flag3;
+  return ans;
 }
 /* 
  * conditional - same as x ? y : z 
