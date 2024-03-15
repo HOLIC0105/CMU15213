@@ -216,7 +216,7 @@ int negate(int x) {
  */
 int isAsciiDigit(int x) {
   int a = x >> 8;
-  int flag1 = !a; //是否有多余位数
+  int flag1 = !a; 
   int b = (x & 0xff) >> 4;
   int flag2 = !(b ^ 0x3);
   int c = x & 8;
