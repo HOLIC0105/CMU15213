@@ -1,6 +1,8 @@
 {
   "files.associations": {
     "system_error": "c",
-    "random": "c"
+    "random": "c",
+    "ostream": "cpp",
+    "iostream": "cpp"
   }
 }
