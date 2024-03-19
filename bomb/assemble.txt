@@ -518,20 +518,22 @@ Disassembly of section .text:
   401100:	49 89 e5             	mov    %rsp,%r13
   401103:	48 89 e6             	mov    %rsp,%rsi
   401106:	e8 51 03 00 00       	call   40145c <read_six_numbers>
-  40110b:	49 89 e6             	mov    %rsp,%r14
+
+  40110b:	49 89 e6             	mov    %rsp,%r14                 
   40110e:	41 bc 00 00 00 00    	mov    $0x0,%r12d
-  401114:	4c 89 ed             	mov    %r13,%rbp
-  401117:	41 8b 45 00          	mov    0x0(%r13),%eax
-  40111b:	83 e8 01             	sub    $0x1,%eax
-  40111e:	83 f8 05             	cmp    $0x5,%eax
+  401114:	4c 89 ed             	mov    %r13,%rbp               // a[0] <= 6
+  401117:	41 8b 45 00          	mov    0x0(%r13),%eax          // rax = a[0]
+  40111b:	83 e8 01             	sub    $0x1,%eax               // rax = a[0] - 1
+  40111e:	83 f8 05             	cmp    $0x5,%eax               
   401121:	76 05                	jbe    401128 <phase_6+0x34>
   401123:	e8 12 03 00 00       	call   40143a <explode_bomb>
-  401128:	41 83 c4 01          	add    $0x1,%r12d
+  34         401128:	41 83 c4 01          	add    $0x1,%r12d
+                                                               r12 = 0
   40112c:	41 83 fc 06          	cmp    $0x6,%r12d
   401130:	74 21                	je     401153 <phase_6+0x5f>
-  401132:	44 89 e3             	mov    %r12d,%ebx
-  401135:	48 63 c3             	movslq %ebx,%rax
-  401138:	8b 04 84             	mov    (%rsp,%rax,4),%eax
+  401132:	44 89 e3             	mov    %r12d,%ebx            rbx = r12
+  401135:	48 63 c3             	movslq %ebx,%rax             rax = r12
+  401138:	8b 04 84             	mov    (%rsp,%rax,4),%eax    rax = a[rax] 
   40113b:	39 45 00             	cmp    %eax,0x0(%rbp)
   40113e:	75 05                	jne    401145 <phase_6+0x51>
   401140:	e8 f5 02 00 00       	call   40143a <explode_bomb>
