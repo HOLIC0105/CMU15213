@@ -1,6 +1,9 @@
 /* This function marks the start of the farm */
+#include <stdio.h>
+
 int start_farm()
 {
+    vfprintf();
     return 1;
 }
 

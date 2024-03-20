@@ -3,6 +3,7 @@
     "system_error": "c",
     "random": "c",
     "ostream": "cpp",
-    "iostream": "cpp"
+    "iostream": "cpp",
+    "stdio.h": "c"
   }
 }
