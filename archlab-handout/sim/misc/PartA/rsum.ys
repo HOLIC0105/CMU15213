@@ -1,0 +1,42 @@
+#Execution begins at address 0
+  .pos 0
+  irmovq stack, %rsp
+  call main
+  halt
+
+# Sample linked list
+.align 8
+ele1:
+  .quad 0x00a
+  .quad ele2
+ele2:
+  .quad 0x0b0
+  .quad ele3
+ele3:
+  .quad 0xc00
+  .quad 0
+
+main:
+  irmovq ele1, %rdi
+  call rsum_list
+  ret
+
+rsum_list:
+  xorq %rax, %rax
+  andq %rdi, %rdi
+  jne rsum_list_1
+  ret 
+rsum_list_1:
+  mrmovq (%rdi), %rsi
+  pushq %rsi
+  irmovq $8, %rdx
+  addq %rdi, %rdx
+  mrmovq (%rdx), %rdi
+  call rsum_list
+  popq %rsi
+  addq %rsi, %rax
+  ret
+
+#Stack starts here ans grows to lower addresses
+  .pos 0x200
+stack:
