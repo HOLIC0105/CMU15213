@@ -7,7 +7,7 @@
                             | 	# Set up arguments for copy function and then invoke it
 0x00a: 30f20400000000000000 | 	irmovq $4, %rdx		# src and dst have 4 elements
 0x014: 30f6c800000000000000 | 	irmovq dest, %rsi	# dst array
-0x01e: 30f79000000000000000 | 	irmovq src, %rdi	# src array
+0x01e: 30f79800000000000000 | 	irmovq src, %rdi	# src array
 0x028: 803200000000000000   | 	call ncopy		 
 0x031: 00                   | 	halt			# should halt with num nonzeros in %rax
 0x032:                      | StartFun:
@@ -31,42 +31,41 @@
                             | 	# Loop header
 0x032: 6300                 | 	xorq %rax,%rax		# count = 0;
 0x034: 6222                 | 	andq %rdx,%rdx		# len <= 0?
-0x036: 718f00000000000000   | 	jle Done		# if so, goto Done:
+0x036: 719100000000000000   | 	jle Done		# if so, goto Done:
                             | 
-0x03f: 50a70000000000000000 | Loop:	mrmovq (%rdi), %r10	# read val from src...
-0x049: 40a60000000000000000 | 	rmmovq %r10, (%rsi)	# ...and store it to dst
-0x053: 62aa                 | 	andq %r10, %r10		# val <= 0?
-0x055: 716a00000000000000   | 	jle Npos		# if so, goto Npos:
-0x05e: 30fa0100000000000000 | 	irmovq $1, %r10
-0x068: 60a0                 | 	addq %r10, %rax		# count++
-0x06a: 30fa0100000000000000 | Npos:	irmovq $1, %r10
-0x074: 61a2                 | 	subq %r10, %rdx		# len--
-0x076: 30fa0800000000000000 | 	irmovq $8, %r10
-0x080: 60a7                 | 	addq %r10, %rdi		# src++
-0x082: 60a6                 | 	addq %r10, %rsi		# dst++
-0x084: 6222                 | 	andq %rdx,%rdx		# len > 0?
-0x086: 763f00000000000000   | 	jg Loop			# if so, goto Loop:
+0x03f:                      | Loop:	
+0x03f: 50a70000000000000000 |   mrmovq (%rdi), %r10	# read val from src...
+0x049: c0f2ffffffffffffffff | 	iaddq $-1, %rdx		# len--
+0x053: 40a60000000000000000 | 	rmmovq %r10, (%rsi)	# ...and store it to dst
+0x05d: 62aa                 | 	andq %r10, %r10		# val <= 0?
+0x05f: 717200000000000000   | 	jle Npos		# if so, goto Npos:
+0x068: c0f00100000000000000 | 	iaddq $1, %rax		# count++
+0x072:                      | Npos:		
+0x072: c0f70800000000000000 | 	iaddq $8, %rdi		# src++
+0x07c: c0f60800000000000000 | 	iaddq $8, %rsi		# dst++
+0x086: 6222                 | 	andq %rdx,%rdx		# len > 0?
+0x088: 763f00000000000000   | 	jg Loop			# if so, goto Loop:
                             | ##################################################################
                             | # Do not modify the following section of code
                             | # Function epilogue.
-0x08f:                      | Done:
-0x08f: 90                   | 	ret
+0x091:                      | Done:
+0x091: 90                   | 	ret
                             | ##################################################################
                             | # Keep the following label at the end of your function
-0x090:                      | End:
+0x092:                      | End:
                             | #/* $end ncopy-ys */
-0x090:                      | EndFun:
+0x092:                      | EndFun:
                             | 
                             | ###############################
                             | # Source and destination blocks 
                             | ###############################
-0x090:                      | 	.align 8
-0x090:                      | src:
-0x090: ffffffffffffffff     | 	.quad -1
-0x098: feffffffffffffff     | 	.quad -2
-0x0a0: 0300000000000000     | 	.quad 3
-0x0a8: 0400000000000000     | 	.quad 4
-0x0b0: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
+0x098:                      | 	.align 8
+0x098:                      | src:
+0x098: ffffffffffffffff     | 	.quad -1
+0x0a0: 0200000000000000     | 	.quad 2
+0x0a8: 0300000000000000     | 	.quad 3
+0x0b0: fcffffffffffffff     | 	.quad -4
+0x0b8: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
                             | 
 0x0c0:                      | 	.align 16
 0x0c0:                      | Predest:
