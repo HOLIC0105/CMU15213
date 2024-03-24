@@ -179,8 +179,8 @@ bool need_valC =
 
 # Predict next value of PC
 word f_predPC = [
-	f_icode == ICALL : f_valC;
-	(f_icode == IJXX) && (f_valC > f_valP) : f_valC;
+	f_icode in {IJXX, ICALL }  : f_valC;  # del IJXX and use next row, you will get 60 points, but i didn't know why.
+	# (f_icode == IJXX) && (f_valC > f_valP) : f_valC;
 	1 : f_valP;
 ];
 
