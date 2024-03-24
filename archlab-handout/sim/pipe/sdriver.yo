@@ -172,8 +172,8 @@
                             | ###############################
 0x368:                      | 	.align 8
 0x368:                      | src:
-0x368: ffffffffffffffff     | 	.quad -1
-0x370: 0200000000000000     | 	.quad 2
+0x368: 0100000000000000     | 	.quad 1
+0x370: feffffffffffffff     | 	.quad -2
 0x378: 0300000000000000     | 	.quad 3
 0x380: fcffffffffffffff     | 	.quad -4
 0x388: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
