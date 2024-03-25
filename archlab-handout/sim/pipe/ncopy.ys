@@ -134,11 +134,11 @@ len3:
 Npos31:
 	andq %r9, %r9	
 	rmmovq %r9, 8(%rsi)
-	rmmovq %r10, 16(%rsi)
 	jle Npos32		
 	iaddq $1, %rax	
 Npos32:
 	andq %r10, %r10		
+	rmmovq %r10, 16(%rsi)
 	jle Npos33	
 	iaddq $1, %rax	
 Npos33:
