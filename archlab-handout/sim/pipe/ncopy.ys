@@ -102,15 +102,16 @@ Npos44:
 	iaddq $32, %rdi	
 	iaddq $32, %rsi		
 Between4to7:
+	mrmovq 0(%rdi), %r8	
 	iaddq $-2, %rdx
 	jle Between4to5
 Between6to7:
 	iaddq $-1, %rdx
+	mrmovq 8(%rdi), %r9
 	je len2
 	jmp len3
 Between4to5:
 	jne Done
-	mrmovq 0(%rdi), %r8	
 	andq %r8, %r8	
 	rmmovq %r8, 0(%rsi)
 	jle Done		
@@ -118,13 +119,13 @@ Between4to5:
 	ret
 Between0to3:
 	iaddq $2, %rdx
+	mrmovq 0(%rdi), %r8	
 	jle Between0to1
 Between2to3:
 	iaddq $-1, %rdx
+	mrmovq 8(%rdi), %r9
 	jle len2
 len3:
-	mrmovq 0(%rdi), %r8	
-	mrmovq 8(%rdi), %r9
 	andq %r8, %r8	
 	mrmovq 16(%rdi), %r10
 	rmmovq %r8, 0(%rsi)
@@ -143,15 +144,13 @@ Npos32:
 Npos33:
 	ret
 len2:
-	mrmovq 0(%rdi), %r8	
-	mrmovq 8(%rdi), %r9
 	andq %r8, %r8	
 	rmmovq %r8, 0(%rsi)
-	rmmovq %r9, 8(%rsi)
 	jle Npos21		
 	iaddq $1, %rax	
 Npos21:
-	andq %r9, %r9	
+	andq %r9, %r9		
+	rmmovq %r9, 8(%rsi)
 	jle Npos22		
 	iaddq $1, %rax	
 Npos22:
@@ -159,7 +158,6 @@ Npos22:
 Between0to1:
 	jne Done
 len1:
-	mrmovq 0(%rdi), %r8	
 	andq %r8, %r8	
 	rmmovq %r8, 0(%rsi)
 	jle Npos11		
