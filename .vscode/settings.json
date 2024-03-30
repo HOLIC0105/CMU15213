@@ -4,6 +4,10 @@
     "random": "c",
     "ostream": "cpp",
     "iostream": "cpp",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "getopt.h": "c",
+    "unistd.h": "c",
+    "*.tcc": "c",
+    "string.h": "c"
   }
 }

@@ -32,58 +32,57 @@ ncopy:
 	iaddq $-7, %rdx
 	jle Done8		# if so, goto Done1:
 Loop8:	
-iaddq $-8, %rdx		
-  mrmovq 0(%rdi), %r8	
+  mrmovq (%rdi), %r8	
 	mrmovq 8(%rdi), %r9
 	mrmovq 16(%rdi), %r10
 	mrmovq 24(%rdi), %r11	
-	andq %r8, %r8	
 	mrmovq 32(%rdi), %r12
 	mrmovq 40(%rdi), %r13
 	mrmovq 48(%rdi), %r14
 	mrmovq 56(%rdi), %rbx
+	andq %r8, %r8	
+	rmmovq %r8, 0(%rsi)	
 	jle Npos81		
 	iaddq $1, %rax	
 Npos81:
 	andq %r9, %r9	
-	rmmovq %r8, 0(%rsi)	
+	rmmovq %r9, 8(%rsi)	
 	jle Npos82		
 	iaddq $1, %rax	
 Npos82:
 	andq %r10, %r10		
-	rmmovq %r9, 8(%rsi)	
+	rmmovq %r10, 16(%rsi)	
 	jle Npos83	
 	iaddq $1, %rax	
 Npos83:
 	andq %r11, %r11
-	rmmovq %r10, 16(%rsi)	
+	rmmovq %r11, 24(%rsi)	
 	jle Npos84		
 	iaddq $1, %rax	
 Npos84:
 	andq %r12, %r12	
-	rmmovq %r11, 24(%rsi)		
+	rmmovq %r12, 32(%rsi)		
 	jle Npos85		
 	iaddq $1, %rax	
 Npos85:
 	andq %r13, %r13
-	rmmovq %r12, 32(%rsi)	
+	rmmovq %r13, 40(%rsi)	
 	jle Npos86		
 	iaddq $1, %rax	
 Npos86:
 	andq %r14, %r14
-	rmmovq %r13, 40(%rsi)	
+	rmmovq %r14, 48(%rsi)	
 	jle Npos87	
 	iaddq $1, %rax	
 Npos87:
 	andq %rbx, %rbx	
-	rmmovq %r14, 48(%rsi)	
+	rmmovq %rbx, 56(%rsi)	
 	jle Npos88		
 	iaddq $1, %rax	
 Npos88:		
 	iaddq $64, %rdi	
 	iaddq $64, %rsi	
-	andq %rdx,%rdx	
-	rmmovq %rbx, -8(%rsi)	
+	iaddq $-8, %rdx			
 	jg Loop8		
 Done8:	
 	iaddq $4, %rdx
@@ -94,7 +93,7 @@ Between4to7:
 Between6to7:	
 	iaddq $-1, %rdx 
 	je Len6
-	mrmovq 48(%rdi), %r9
+	mrmovq 48(%rdi), %r8
 	jmp len7
 Between4to5:
 	jne Len4		
@@ -109,18 +108,19 @@ Between2to3:
 	mrmovq 16(%rdi), %r9
 	jmp len3
 Between0to1:
-	jne Done
 	mrmovq (%rdi), %r9
-	jmp len1
+	je len1
+	ret
 len7:
 	andq %r8, %r8	
 	rmmovq %r8, 48(%rsi)
 	mrmovq 40(%rdi), %r8
 	jle len6		
 	iaddq $1, %rax	
-Len6: mrmovq 40(%rdi), %r8
+Len6:
+	mrmovq 40(%rdi), %r8
 len6:
-	mrmovq 48(%rdi), %r9
+	mrmovq 32(%rdi), %r9
 	andq %r8, %r8	
 	rmmovq %r8, 40(%rsi)
 	jle len5		
@@ -131,10 +131,11 @@ len5:
 	mrmovq 24(%rdi), %r8
 	jle len4		
 	iaddq $1, %rax	
-Len4:mrmovq 24(%rdi), %r8
+Len4:
+	mrmovq 24(%rdi), %r8
 len4:
 	mrmovq 16(%rdi), %r9
-	andq %r8, %r8	
+	andq %r8, %r8		
 	rmmovq %r8, 24(%rsi)
 	jle len3		
 	iaddq $1, %rax	
@@ -144,10 +145,11 @@ len3:
 	mrmovq 8(%rdi), %r8
 	jle len2		
 	iaddq $1, %rax
-Len2:mrmovq 8(%rdi), %r8
+Len2:
+	mrmovq 8(%rdi), %r8
 len2:
 	mrmovq (%rdi), %r9
-	andq %r8, %r8	
+	andq %r8, %r8		
 	rmmovq %r8, 8(%rsi)
 	jle len1		
 	iaddq $1, %rax	
@@ -173,8 +175,8 @@ EndFun:
 	.align 8
 src:
 	.quad -1
-	.quad 2
-	.quad -3
+	.quad -2
+	.quad 3
 	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
