@@ -175,9 +175,9 @@
 0x3a0:                      | 	.align 8
 0x3a0:                      | src:
 0x3a0: ffffffffffffffff     | 	.quad -1
-0x3a8: feffffffffffffff     | 	.quad -2
+0x3a8: 0200000000000000     | 	.quad 2
 0x3b0: 0300000000000000     | 	.quad 3
-0x3b8: 0400000000000000     | 	.quad 4
+0x3b8: fcffffffffffffff     | 	.quad -4
 0x3c0: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
                             | 
 0x3d0:                      | 	.align 16
