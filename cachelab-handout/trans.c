@@ -55,57 +55,27 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             }
         }     
     } else if(M == 64) {
-        for (i = 0; i < 64; i += 4) {
+         for (i = 0; i < 64; i += 8) {
             for (j = 0; j < 64; j += 8) {
-                int l = i, r = i + 3;
-                int L = j, R = j + 7;
-                for(int I = l; I <= r; I ++) {
-                    for(int J = L; J <= R; J ++) {
-                        tmp[J - L] = A[I][J];
-                    }
-                    for(int J = L; J <= R; J ++){
-                        B[I][J] = tmp[J - L];
-                    }
-                }
-                R -= 4;
-                if(l == L) {
-                    for(int I = l; I <= r; I ++) {
-                        for(int J = L; J <= R; J ++) {
-                            tmp[0] = B[I][J];
-                            B[I][J] = B[J][I];
-                            B[J][I] = tmp[0];
+                for(int k = 0; k < 8; k ++) {
+                    if(k < 4) {
+                        for(int u = 0; u < 8; u ++)
+                            tmp[u] = A[i + k][j + u];               
+                        for(int u = 0; u < 4; u ++)
+                            B[j + u][i + k] = tmp[u],
+                            B[j + u][i + k + 4] = tmp[u + 4];
+                    } else {
+                         for(int u = 0; u < 4; u ++)
+                            tmp[u + 4] = A[i + u + 4][j + k - 4];
+                        for(int u = 0; u < 4; u ++) {
+                            tmp[u] = B[j + k - 4][i + 4 + u];
+                            B[j + k - 4][i + 4 + u] = tmp[u + 4];
                         }
-                        L ++;
-                    }
-                    R += 4;
-                } else if(l > L) {
-                    for(int I = l; I <= r; I ++) {
-                        for(int J = L; J <= R; J ++) {
-                            tmp[0] = B[I][J];
-                            B[I][J] = B[J][I];
-                            B[J][I] = tmp[0];
-                        }
-                    }
-                    L += 4;
-                    R += 4;
-                } 
-
-                if(l == L) {
-                    for(int I = l; I <= r; I ++) {
-                        for(int J = L; J <= R; J ++) {
-                            tmp[0] = B[I][J];
-                            B[I][J] = B[J][I];
-                            B[J][I] = tmp[0];
-                        }
-                        L ++;
-                    }
-                } else if(l > L) {
-                    for(int I = l; I <= r; I ++) {
-                        for(int J = L; J <= R; J ++) {
-                            tmp[0] = B[I][J];
-                            B[I][J] = B[J][I];
-                            B[J][I] = tmp[0];
-                        }
+                        for(int u = 4; u < 8; u ++)
+                            tmp[u] = A[i + u][j + k];
+                        for(int u = 0; u < 4; u ++)
+                            B[j + k][i + u] = tmp[u],
+                            B[j + k][i + u + 4] = tmp[u + 4];
                     }
                 } 
             }
