@@ -81,9 +81,9 @@ void transpose_submit(int M, int N, int A[N][M], int B[M][N])
             }
         }     
     } else if(M == 61) {
-        for (i = 0; i < 67; i += 16) {
+        for (i = 0; i < 67; i += 18) {
             for (j = 0; j < 61; j += 8) {
-                int l = i, r = i + 15;
+                int l = i, r = i + 17;
                 int L = j, R = j + 7;
                 r = r > 66 ? 66 : r;
                 R = R > 60 ? 60 : R;
