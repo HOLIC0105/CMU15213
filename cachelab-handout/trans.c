@@ -22,6 +22,113 @@ int is_transpose(int M, int N, int A[N][M], int B[M][N]);
 char transpose_submit_desc[] = "Transpose submission";
 void transpose_submit(int M, int N, int A[N][M], int B[M][N])
 {
+    int i, j, tmp[8];
+    if(M == 32) {
+        for (i = 0; i < 32; i += 8) {
+            for (j = 0; j < 32; j += 8) {
+                int l = i, r = i + 7;
+                int L = j, R = j + 7;
+                if(i != j) {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            B[I][J] = A[J][I];
+                        }
+                    }
+                } else {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[J - L] = A[I][J];
+                        }
+                        for(int J = L; J <= R; J ++) {
+                            B[I][J] = tmp[J - L];
+                        }
+                    }
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[0] = B[I][J];
+                            B[I][J] = B[J][I];
+                            B[J][I] = tmp[0];
+                        }
+                        L ++;
+                    }
+                }
+            }
+        }     
+    } else if(M == 64) {
+        for (i = 0; i < 64; i += 4) {
+            for (j = 0; j < 64; j += 8) {
+                int l = i, r = i + 3;
+                int L = j, R = j + 7;
+                for(int I = l; I <= r; I ++) {
+                    for(int J = L; J <= R; J ++) {
+                        tmp[J - L] = A[I][J];
+                    }
+                    for(int J = L; J <= R; J ++){
+                        B[I][J] = tmp[J - L];
+                    }
+                }
+                R -= 4;
+                if(l == L) {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[0] = B[I][J];
+                            B[I][J] = B[J][I];
+                            B[J][I] = tmp[0];
+                        }
+                        L ++;
+                    }
+                    R += 4;
+                } else if(l > L) {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[0] = B[I][J];
+                            B[I][J] = B[J][I];
+                            B[J][I] = tmp[0];
+                        }
+                    }
+                    L += 4;
+                    R += 4;
+                } 
+
+                if(l == L) {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[0] = B[I][J];
+                            B[I][J] = B[J][I];
+                            B[J][I] = tmp[0];
+                        }
+                        L ++;
+                    }
+                } else if(l > L) {
+                    for(int I = l; I <= r; I ++) {
+                        for(int J = L; J <= R; J ++) {
+                            tmp[0] = B[I][J];
+                            B[I][J] = B[J][I];
+                            B[J][I] = tmp[0];
+                        }
+                    }
+                } 
+            }
+        }     
+    } else if(M == 61) {
+        for (i = 0; i < 67; i += 16) {
+            for (j = 0; j < 61; j += 8) {
+                int l = i, r = i + 15;
+                int L = j, R = j + 7;
+                r = r > 66 ? 66 : r;
+                R = R > 60 ? 60 : R;
+                for(int I = l; I <= r; I ++) {
+                    for(int J = L; J <= R; J ++) {
+                        tmp[J -L] = A[I][J];
+                    }
+                    for(int J = L; J <= R; J ++) {
+                        B[J][I] = tmp[J - L];
+                    }
+                    
+                }
+            }
+        }       
+    }
 }
 
 /* 
