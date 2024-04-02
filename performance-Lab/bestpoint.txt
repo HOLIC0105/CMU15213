@@ -1,0 +1,31 @@
+Teamname: holic0105
+Member 1: Holic
+Email 1: 3485995896@qq.com
+
+Rotate: Version = naive_rotate: Naive baseline implementation:
+Dim             64      128     256     512     1024    Mean
+Your CPEs       1.5     2.0     3.6     6.6     7.1
+Baseline CPEs   14.7    40.1    46.4    65.9    94.5
+Speedup         9.7     20.0    12.9    10.0    13.4    12.7
+
+Rotate: Version = rotate: Current working version:
+Dim             64      128     256     512     1024    Mean
+Your CPEs       1.3     1.5     0.9     1.7     3.5
+Baseline CPEs   14.7    40.1    46.4    65.9    94.5
+Speedup         11.5    26.6    50.4    38.0    27.1    27.5
+
+Smooth: Version = smooth: Current working version:
+Dim             32      64      128     256     512     Mean
+Your CPEs       10.5    11.1    11.2    13.5    11.9
+Baseline CPEs   695.0   698.0   702.0   717.0   722.0
+Speedup         66.0    62.9    62.4    53.1    60.8    60.9
+
+Smooth: Version = naive_smooth: Naive baseline implementation:
+Dim             32      64      128     256     512     Mean
+Your CPEs       22.6    23.3    23.3    24.4    26.8
+Baseline CPEs   695.0   698.0   702.0   717.0   722.0
+Speedup         30.8    30.0    30.1    29.4    27.0    29.4
+
+Summary of Your Best Scores:
+  Rotate: 27.5 (rotate: Current working version)
+  Smooth: 60.9 (smooth: Current working version)
