@@ -10,10 +10,10 @@
  * Please fill in the following team struct 
  */
 team_t team = {
-    "holic",              /* Team name */
+    "holic0105",              /* Team name */
 
-    "Harry Q. Bovik",     /* First member full name */
-    "bovik@nowhere.edu",  /* First member email address */
+    "Holic",     /* First member full name */
+    "3485995896@qq.com",  /* First member email address */
 
     "",                   /* Second member full name (leave blank if none) */
     ""                    /* Second member email addr (leave blank if none) */
@@ -47,8 +47,35 @@ void naive_rotate(int dim, pixel *src, pixel *dst)
 char rotate_descr[] = "rotate: Current working version";
 void rotate(int dim, pixel *src, pixel *dst) 
 {
-    naive_rotate(dim, src, dst);
+    int dim2 = dim << 1;
+    for(int i = 1; i <= dim; i += 4) {
+        int x2 = i;
+        int x3 = x2 + 1;
+        int x1 = x2 - 1;
+        int x4 = x3 + 1;
+
+        int y1 = i * dim;
+        int y2 = y1 + dim;
+        int y3 = y2 + dim;
+        int y4 = y3 + dim;
+
+        for(int j = 0; j < dim; j += 2) {
+            dst[x1] = src[y1 - 1];
+            dst[x2] = src[y2 - 1]; 
+            dst[x3] = src[y3 - 1];
+            dst[x4] = src[y4 - 1];
+            dst[x1 + dim] = src[y1 - 2];
+            dst[x2 + dim] = src[y2 - 2];
+            dst[x3 + dim] = src[y3 - 2];
+            dst[x4 + dim] = src[y4 - 2];
+            x1 += dim2; y1 -= 2;
+            x2 += dim2; y2 -= 2;
+            x3 += dim2; y3 -= 2;
+            x4 += dim2; y4 -= 2;
+        }
+    }
 }
+
 
 /*********************************************************************
  * register_rotate_functions - Register all of your different versions
@@ -61,7 +88,7 @@ void rotate(int dim, pixel *src, pixel *dst)
 void register_rotate_functions() 
 {
     add_rotate_function(&naive_rotate, naive_rotate_descr);   
-    add_rotate_function(&rotate, rotate_descr);   
+    add_rotate_function(&rotate, rotate_descr);     
     /* ... Register additional test functions here */
 }
 
@@ -163,7 +190,9 @@ void naive_smooth(int dim, pixel *src, pixel *dst)
 char smooth_descr[] = "smooth: Current working version";
 void smooth(int dim, pixel *src, pixel *dst) 
 {
-    naive_smooth(dim, src, dst);
+    for (int i = 0; i < dim; i++)
+	    for (int j = 0; j < dim; j++)
+	        dst[RIDX(i, j, dim)] = avg(dim, i, j, src);
 }
 
 
