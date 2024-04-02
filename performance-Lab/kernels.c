@@ -187,12 +187,92 @@ void naive_smooth(int dim, pixel *src, pixel *dst)
  * smooth - Your current working version of smooth. 
  * IMPORTANT: This is the version you will be graded on
  */
+static void  corner(pixel *dst, pixel *src, int t, int s, int dim) {
+    int t1 = t + 1; // 右上
+    int t2 = t + dim; //左下
+    int t3 = t2 + 1; //右下
+    dst[s].red  = ((src[t].red + src[t1].red) + (src[t2].red + src[t3].red)) >> 2;
+    dst[s].green =((src[t].green + src[t1].green) + (src[t2].green + src[t3].green)) >> 2;
+    dst[s].blue = ((src[t].blue + src[t1].blue) + (src[t2].blue + src[t3].blue)) >> 2;
+}
+static void edgeL(pixel *dst, pixel *src, int t, int s, int dim) {
+    int t1 = t + 1;
+    int t2 = t + dim;
+    int t3 = t2 + 1;
+    int t4 = t2 + dim;
+    int t5 = t4 + 1;
+    dst[s].red  = ((src[t].red + src[t1].red) + (src[t2].red + src[t3].red) + (src[t4].red + src[t5].red)) / 6;
+    dst[s].green = ((src[t].green + src[t1].green) + (src[t2].green + src[t3].green) + (src[t4].green + src[t5].green)) / 6;
+    dst[s].blue  = ((src[t].blue + src[t1].blue) + (src[t2].blue + src[t3].blue) + (src[t4].blue + src[t5].blue)) /6 ;
+}
+static void  edgeH(pixel *dst, pixel *src, int t, int s, int dim) {
+    int t1 = t + 1;
+    int t2 = t + dim;
+    int t3 = t2 + 1;
+    int t4 = t1 + 1;
+    int t5 = t3 + 1;
+    dst[s].red  = ((src[t].red + src[t1].red) + (src[t2].red + src[t3].red) + (src[t4].red + src[t5].red)) / 6;
+    dst[s].green = ((src[t].green + src[t1].green) + (src[t2].green + src[t3].green) + (src[t4].green + src[t5].green)) / 6;
+    dst[s].blue  = ((src[t].blue + src[t1].blue) + (src[t2].blue + src[t3].blue) + (src[t4].blue + src[t5].blue)) /6 ;
+}
+static void  solve(pixel *dst, pixel *src, int t, int s, int dim) {
+    int t1 = t + 1; //中上
+    int t2 = t + dim; //左中
+    int t3 = t2 + 1; //中中
+    int t4 = t1 + 1; //右上
+    int t5 = t3 + 1; //右中
+    int t6 = t2 + dim; //左下
+    int t7 = t6 + 1; 
+    int t8 = t7 + 1;
+    dst[s].red = (((src[t].red + src[t1].red) + (src[t2].red + src[t3].red))
+      + ((src[t4].red + src[t5].red) + (src[t6].red + src[t7].red))
+      + src[t8].red) / 9;
+    dst[s].green = (((src[t].green + src[t1].green) + (src[t2].green + src[t3].green))
+      + ((src[t4].green + src[t5].green) + (src[t6].green + src[t7].green))
+      + src[t8].green) / 9;
+    dst[s].blue = (((src[t].blue + src[t1].blue) + (src[t2].blue + src[t3].blue))
+      + ((src[t4].blue + src[t5].blue) + (src[t6].blue + src[t7].blue))
+      + src[t8].blue) / 9;
+}
 char smooth_descr[] = "smooth: Current working version";
 void smooth(int dim, pixel *src, pixel *dst) 
 {
-    for (int i = 0; i < dim; i++)
-	    for (int j = 0; j < dim; j++)
-	        dst[RIDX(i, j, dim)] = avg(dim, i, j, src);
+    int s = 0, t = 0;
+    corner(dst , src, s, t, dim);
+    
+    t = dim - 1, s = t - 1;
+    corner(dst , src, s, t, dim);
+    
+    t = dim * dim - 1, s = t - dim - 1;
+    corner(dst , src, s, t, dim);
+
+    t -= dim - 1, s = t - dim;
+    corner(dst , src, s, t, dim);
+
+    int maxn = dim * dim;
+    for(t = dim * (dim - 1) - 1; s > 0; s -= dim, t -= dim) {
+        edgeL(dst, src, s - dim, s, dim);
+        edgeL(dst, src, t - dim - 1, t, dim);
+    }
+
+    t = maxn - 2;
+    s = dim - 2;
+    while(s > 0) {
+        edgeH(dst, src, s - 1, s, dim);
+        edgeH(dst, src, t - 1 - dim, t, dim);
+        s --;
+        t --;
+    }
+    s = dim + 1, t = 0; 
+    for (int i = 1; i < dim - 1; i ++) {
+	    for (int j = 1; j < dim - 1; j++) {
+			solve(dst, src, t, s, dim);
+            s ++;
+            t ++;
+		}
+        s += 2;
+        t += 2;
+	}
 }
 
 
