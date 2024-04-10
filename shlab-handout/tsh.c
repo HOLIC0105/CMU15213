@@ -280,7 +280,7 @@ void do_bgfg(char **argv)
 void waitfg(pid_t pid)
 {   
     if(waitpid(pid, NULL, 0) < 0) {
-        unix_error("waitfg: waitpid error")
+        unix_error("waitfg: waitpid error");
     }
     return;
 }
