@@ -2,6 +2,7 @@
  * tsh - A tiny shell program with job control
  * 
  * <Put your name and login ID here>
+ * HOLIC0105
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,11 +107,11 @@ int main(int argc, char **argv)
 	    break;
         case 'v':             /* emit additional diagnostic info */
             verbose = 1;
-	    break;
+	        break;
         case 'p':             /* don't print a prompt */
             emit_prompt = 0;  /* handy for automatic testing */
-	    break;
-	default:
+	        break;
+	    default:
             usage();
 	}
     }
@@ -131,22 +132,22 @@ int main(int argc, char **argv)
     /* Execute the shell's read/eval loop */
     while (1) {
 
-	/* Read command line */
-	if (emit_prompt) {
-	    printf("%s", prompt);
+	    /* Read command line */
+	    if (emit_prompt) {
+	        printf("%s", prompt);
+	        fflush(stdout);
+	    }
+	    if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
+	        app_error("fgets error");
+	    if (feof(stdin)) { /* End of file (ctrl-d) */
+	        fflush(stdout);
+	        exit(0);
+	    }
+    
+	    /* Evaluate the command line */
+	    eval(cmdline);
 	    fflush(stdout);
-	}
-	if ((fgets(cmdline, MAXLINE, stdin) == NULL) && ferror(stdin))
-	    app_error("fgets error");
-	if (feof(stdin)) { /* End of file (ctrl-d) */
 	    fflush(stdout);
-	    exit(0);
-	}
-
-	/* Evaluate the command line */
-	eval(cmdline);
-	fflush(stdout);
-	fflush(stdout);
     } 
 
     exit(0); /* control never reaches here */
@@ -165,6 +166,29 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS];
+    int state = parseline(cmdline, argv) ? BG : FG;
+    sigset_t oldsigset, tmpsigset;
+    sigemptyset(&tmpsigset);
+    sigaddset(&tmpsigset, SIGCHLD);
+    if(!builtin_cmd(argv)) {
+        int pid = 0;
+        if((pid = fork()) == 0) {
+            setpgid(0, 0);
+            if(execve(argv[0], argv, environ) < 0) {
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+        sigprocmask(SIG_BLOCK, &tmpsigset, &oldsigset);
+        addjob(jobs, pid, state,cmdline);
+        sigprocmask(SIG_SETMASK, &oldsigset, NULL);
+        if(state == BG) {
+            printf("[%d] (%d) %s\n", jobs[nextjid - 1].jid, jobs[nextjid - 1].pid, cmdline);
+        } else {
+            waitfg(pid);
+        }
+    }
     return;
 }
 
@@ -186,42 +210,41 @@ int parseline(const char *cmdline, char **argv)
     strcpy(buf, cmdline);
     buf[strlen(buf)-1] = ' ';  /* replace trailing '\n' with space */
     while (*buf && (*buf == ' ')) /* ignore leading spaces */
-	buf++;
+	    buf++;
 
     /* Build the argv list */
     argc = 0;
     if (*buf == '\'') {
-	buf++;
-	delim = strchr(buf, '\'');
-    }
-    else {
-	delim = strchr(buf, ' ');
+	    buf++;
+	    delim = strchr(buf, '\'');
+    } else {
+	    delim = strchr(buf, ' ');
     }
 
     while (delim) {
-	argv[argc++] = buf;
-	*delim = '\0';
-	buf = delim + 1;
-	while (*buf && (*buf == ' ')) /* ignore spaces */
-	       buf++;
+	    argv[argc ++] = buf;
+	    *delim = '\0';
+	    buf = delim + 1;
+	    while (*buf && (*buf == ' ')) /* ignore spaces */
+	        buf++;
 
-	if (*buf == '\'') {
-	    buf++;
-	    delim = strchr(buf, '\'');
-	}
-	else {
-	    delim = strchr(buf, ' ');
-	}
+	    if (*buf == '\'') {
+	        buf ++;
+	        delim = strchr(buf, '\'');
+	    } else {
+	        delim = strchr(buf, ' ');
+	    }
     }
     argv[argc] = NULL;
     
     if (argc == 0)  /* ignore blank line */
-	return 1;
+	    return 1;
 
     /* should the job run in the background? */
-    if ((bg = (*argv[argc-1] == '&')) != 0) {
-	argv[--argc] = NULL;
+    if ((bg = (*argv[argc - 1] == '&')) != 0) {
+	    argv[-- argc] = NULL;
     }
+
     return bg;
 }
 
@@ -230,7 +253,16 @@ int parseline(const char *cmdline, char **argv)
  *    it immediately.  
  */
 int builtin_cmd(char **argv) 
-{
+{   
+    if(argv[0] == "quit") {
+        exit(0);
+    } else if(argv[0] == "jobs") {
+        listjobs(jobs);
+        return 1;
+    } else if(argv[0] == "bg" || argv[0] == "fg") {
+        do_bgfg(argv);
+        return 1;
+    } 
     return 0;     /* not a builtin command */
 }
 
@@ -238,7 +270,7 @@ int builtin_cmd(char **argv)
  * do_bgfg - Execute the builtin bg and fg commands
  */
 void do_bgfg(char **argv) 
-{
+{   
     return;
 }
 
@@ -246,7 +278,10 @@ void do_bgfg(char **argv)
  * waitfg - Block until process pid is no longer the foreground process
  */
 void waitfg(pid_t pid)
-{
+{   
+    if(waitpid(pid, NULL, 0) < 0) {
+        unix_error("waitfg: waitpid error")
+    }
     return;
 }
 
@@ -255,7 +290,7 @@ void waitfg(pid_t pid)
  *****************/
 
 /* 
- * sigchld_handler - The kernel sends a SIGCHLD to the shell whenever
+ * sigchld_handler - The kernel sends a SIGCHLD to the shell whenever~
  *     a child job terminates (becomes a zombie), or stops because it
  *     received a SIGSTOP or SIGTSTP signal. The handler reaps all
  *     available zombie children, but doesn't wait for any other
