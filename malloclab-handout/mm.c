@@ -87,12 +87,14 @@ team_t team = {
 char *heap_head_list;
 
 static void eraseFromFreeList(void * bp) {
-    return;
     void * prev = GET_PREV_ADDRESS(bp);
     void * next = GET_NEXT_ADDRESS(bp);
-
-    PUTPTR(GET_NEXT_ADDRESS(prev), next);
-    PUTPTR(GET_PREV_ADDRESS(next), prev);
+    printf("%p %p %p\n", prev, bp, next);
+    return;
+    if(next != NULL) {
+        PUTPTR(GET_NEXT_ADDRESS(prev), next);
+        PUTPTR(GET_PREV_ADDRESS(next), prev);
+    }
 }
 
 static void * coalesce(void * bp) {
