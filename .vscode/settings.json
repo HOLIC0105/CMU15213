@@ -49,6 +49,11 @@
     "utility": "cpp",
     "charconv": "cpp",
     "thread": "cpp",
-    "memlib.h": "c"
+    "memlib.h": "c",
+    "chrono": "c",
+    "algorithm": "c",
+    "limits": "c",
+    "numeric": "c",
+    "complex": "c"
   }
 }

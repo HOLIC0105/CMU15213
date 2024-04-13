@@ -83,8 +83,11 @@ team_t team = {
 #define GET_NEXT_ADDRESS(bp)        (*(void **)(bp))
 
 #define CLASS 10
+#define FINDCOUNT 20
 
 #define HEAP_HEAD_SIZE (SIZE_T_SIZE * CLASS) 
+
+#define min(a, b) (a < b ? a : b)
 
 char *heap_head_list;
 char *last_block_ptl;
@@ -148,10 +151,8 @@ static int searchListID(int siz) {
 static void insertToFreeList(char * bp) {
 
     UPDATE_PREV_EMPTY(HDRP(NEXT_BLKP(bp)));
-    int siz = GET_SIZE(HDRP(bp));
-    int id = searchListID(siz);
-
-    char * p = (heap_head_list + SIZE_T_SIZE * id);
+    char * p = (heap_head_list + 
+                SIZE_T_SIZE * searchListID(GET_SIZE(HDRP(bp))));
     char * next_p = GETADDRESS(p);
     
     PUTADDRESS(bp, next_p);
@@ -238,37 +239,50 @@ void *mm_malloc(size_t size) {
     int newsize = size + (WSIZE << 1);
     newsize = newsize < MIN_BLOCK ? MIN_BLOCK : ALIGN(newsize);
     int heap_id = searchListID(newsize);
-    for(int i = heap_id; i < 10; i ++) {
+    int num = 0;
+    char * bestbp = NULL;
+    for(int i = heap_id; i < 10 && num < FINDCOUNT; i ++) {
         char *p = (heap_head_list + SIZE_T_SIZE * i);
         char *bp = GETADDRESS(p);
         while(bp != NULL) {
-            if(GET_SIZE(HDRP(bp)) < newsize) bp = GET_NEXT_ADDRESS(bp);
-            else {
-                eraseFromFreeList(bp);
-                char *bp_head = HDRP(bp);
-                int tmpsize = GET_SIZE(bp_head);
-                int relsize = tmpsize - newsize;
-                if(relsize >= 24) {
-                    updateBlock(bp, newsize, 0, 1);
-                    void *next_bp = NEXT_BLKP(bp);
-                    updateBlock(next_bp, relsize, 0, 0);
-                    insertToFreeList(next_bp);
-                } else updateBlock(bp, tmpsize, 0, 1);
-                return bp;
+            if(GET_SIZE(HDRP(bp)) >= newsize && (num ++ < FINDCOUNT)) {
+                if(bestbp == NULL || GET_SIZE(HDRP(bestbp)) > GET_SIZE(HDRP(bp)))
+                    bestbp = bp;
             }
+            bp = GET_NEXT_ADDRESS(bp);
         }
     }
-    char *bp;
+    char * bp = bestbp;
+    if(bp != NULL) {
+        eraseFromFreeList(bp);
+        char *bp_head = HDRP(bp);
+        int tmpsize = GET_SIZE(bp_head);
+        int relsize = tmpsize - newsize;
+        if(relsize >= 24) {
+            if(size <= 96) {
+                updateBlock(bp, newsize, 0, 1);
+                void *next_bp = NEXT_BLKP(bp);
+                updateBlock(next_bp, relsize, 0, 0);
+                insertToFreeList(next_bp);
+            } else {
+                updateBlock(bp, relsize, 0, 0);
+                insertToFreeList(bp);
+                updateBlock(bp = NEXT_BLKP(bp), newsize, 0, 1);
+            }
+        } else updateBlock(bp, tmpsize, 0, 1);
+        return bp;
+    }
     if(GET_PREV_EMPTY(last_block_ptl)) {
         if((bp = extendHeap((newsize - GET_SIZE(last_block_ptl - 4))/ WSIZE)) == NULL) 
             return NULL;
         eraseFromFreeList(bp);
-    } else {
-        if((bp = extendHeap(newsize / WSIZE)) == NULL) 
-            return NULL;
+        updateBlock(bp, GET_SIZE(HDRP(bp)), 0, 1);
+        return bp;
     }
-    updateBlock(bp, GET_SIZE(HDRP(bp)), 0, 1);
-    return bp;
+    if((bp = extendHeap(CHUNKSIZE / WSIZE)) == NULL) 
+           return NULL;
+    insertToFreeList(bp);
+    return mm_malloc(size);
 }
 
 /*

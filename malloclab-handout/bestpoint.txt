@@ -1,0 +1,45 @@
+Team Name:HOLIC0105
+Member 1 :holic:3485995896@qq.com
+Using default tracefiles in /home/holic/CMU15213/malloclab-handout/traces/
+Measuring performance with gettimeofday().
+
+Testing mm malloc
+Reading tracefile: amptjp-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: cccp-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: cp-decl-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: expr-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: coalescing-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: random-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: random2-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: binary-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: binary2-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: realloc-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+Reading tracefile: realloc2-bal.rep
+Checking mm_malloc for correctness, efficiency, and performance.
+
+Results for mm malloc:
+trace  valid  util     ops      secs  Kops
+ 0       yes   99%    5694  0.000153 37289
+ 1       yes   99%    5848  0.000163 35811
+ 2       yes   99%    6648  0.000232 28668
+ 3       yes   99%    5380  0.000163 32945
+ 4       yes   99%   14400  0.000203 71041
+ 5       yes   94%    4800  0.001006  4772
+ 6       yes   94%    4800  0.000962  4990
+ 7       yes   95%   12000  0.001886  6364
+ 8       yes   87%   24000  0.002007 11958
+ 9       yes   99%   14401  0.000199 72258
+10       yes   87%   14401  0.000218 65908
+Total          96%  112372  0.007192 15624
+
+Perf index = 57 (util) + 40 (thru) = 97/100
