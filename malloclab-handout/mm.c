@@ -56,10 +56,12 @@ team_t team = {
 #define PUT(p, val)                 (*(unsigned int *)(p) = (val))
 
 //Write an address at address p
-#define PUTPTR(p, val)              (*(void **)(p) = val)
+#define PUTADDRESS(p, val)          (*(void **)(p) = val)
+#define GETADDRESS(p)               (*(void **)(p))
 
 //UPDATE the flag of whether the prev block is empty
-#define UPDATE_prev_EMPTY(p, val)   (*(unsigned int *)(p) |= (val << 1))
+#define UPDATE_PREV_EMPTY(p)        (*(unsigned int *)(p) |= 0x2)
+#define UPDATE_PREV_EXIST(p)        (*(unsigned int *)(p) &= ~0x2)
 
 //Read the size and allocated fields from address p
 #define GET_SIZE(p)                 (GET(p) & ~0x7)
@@ -77,24 +79,75 @@ team_t team = {
 #define PREV_BLKP(bp)               ((char *)(bp) - GET_SIZE((void *)(bp) - DSIZE))
 
 //Get the address of the prev and next block
-#define GET_PREV_ADDRESS(bp)        (*((void **)(bp) + 1))
-#define GET_NEXT_ADDRESS(bp)        (*(void **)(bp))
+#define GET_PREV_BLKP(bp)           (GETADDRESS((char *)(bp) + SIZE_T_SIZE))
+#define GET_NEXT_BLKP(bp)           (*(void **)(bp))
 
-#define CLASS 20
+#define CLASS 10
 
 #define HEAP_HEAD_SIZE (SIZE_T_SIZE * CLASS) 
 
 char *heap_head_list;
 
-static void eraseFromFreeList(void * bp) {
-    void * prev = GET_PREV_ADDRESS(bp);
-    void * next = GET_NEXT_ADDRESS(bp);
-    printf("%p %p %p\n", prev, bp, next);
-    return;
-    if(next != NULL) {
-        PUTPTR(GET_NEXT_ADDRESS(prev), next);
-        PUTPTR(GET_PREV_ADDRESS(next), prev);
+void mm_checkfreelist() {
+    printf("##########FREELIST##########\n");
+    for(int i = 0; i < 10; i ++) {
+        char * p = heap_head_list + i * SIZE_T_SIZE;
+        printf("[%d, %d] : (%p)", (1 << (i + 4)), (1 << (i + 5)), p);
+        while((p = GETADDRESS(p)) != NULL) {
+            printf(" -> (%p)[size = %d]", p, GET_SIZE(HDRP(p)));
+        }
+        printf("\n");
     }
+    printf("############################\n");
+    fflush(stdout);
+}
+
+void mm_checkheap() {
+    printf("\n");
+    printf("used heapsize = %d\n", mem_heapsize());
+    mm_checkfreelist();
+    char * bp = heap_head_list + HEAP_HEAD_SIZE + 2 * WSIZE;
+    int num = 0;
+    printf("##########BLOCKLIST##########\n");
+    while(bp != NULL) {
+        printf("%d : ", ++ num);
+        printf("(%p, %p, %p)[size = %d, prev_block_empty = %d, allocated = %d]",
+               HDRP(bp), bp, FTRP(bp), GET_SIZE(HDRP(bp)), GET_PREV_EMPTY(HDRP(bp)), GET_ALLOC(HDRP(bp)));
+        bp = NEXT_BLKP(bp);
+    }   
+    printf("#############################\n");
+    printf("\n");
+    fflush(stdout);   
+}
+
+static void eraseFromFreeList(void * bp) {
+    void * prev = GET_PREV_BLKP(bp); 
+    void * next = GET_NEXT_BLKP(bp);
+    fflush(stdout);
+    if(next != NULL) {
+        PUTADDRESS(prev, next);
+        PUTADDRESS((char *)next + 4, prev);
+    }
+}
+
+static int searchListID(int siz) {
+    for(int i = 5; i < 14; i ++) {
+        if(siz <= (1 << i)) return i - 5;
+    }
+    return 9;
+}
+
+static void insertToFreeList(void * bp) {
+    int siz = GET_SIZE(HDRP(bp));
+    int id = searchListID(siz);
+
+    void * p = (heap_head_list + SIZE_T_SIZE * id);
+    void * next_p = GETADDRESS(p);
+    
+    PUTADDRESS(bp, next_p);
+    if(next_p)PUTADDRESS((char *)next_p + SIZE_T_SIZE, bp);
+    PUTADDRESS(p, bp);
+    PUTADDRESS((char *)bp + SIZE_T_SIZE, p);
 }
 
 static void * coalesce(void * bp) {
@@ -105,9 +158,9 @@ static void * coalesce(void * bp) {
     void * next_bp_header = HDRP(next_bp);
 
     int preflag = GET_PREV_EMPTY(mid_bp_header); //Whether prev block empty
-    int nextflag = GET_ALLOC(next_bp_header);//Whether next block empty
+    int nextflag = !GET_ALLOC(next_bp_header);//Whether next block empty
     if(!preflag && !nextflag) {
-        UPDATE_prev_EMPTY(next_bp_header, 1);
+        UPDATE_PREV_EMPTY(next_bp_header);
         return mid_bp;
     } else if(preflag && !nextflag) {
         void * prev_bp = PREV_BLKP(bp);
@@ -115,7 +168,7 @@ static void * coalesce(void * bp) {
         int siz = GET_SIZE(mid_bp_header) + GET_SIZE(prev_bp_header);
         PUT(prev_bp_header, PACK(siz, 0));
         PUT(FTRP(prev_bp), PACK(siz, 0));
-        UPDATE_prev_EMPTY(next_bp_header, 1);
+        UPDATE_PREV_EMPTY(next_bp_header);
         eraseFromFreeList(mid_bp);  
         return prev_bp;
     } else if(!preflag && nextflag) {
@@ -146,7 +199,8 @@ static void * extendHeap(int num) {
     PUT(HDRP(bp), PACK(siz, 0)); //update header
     PUT(FTRP(bp), PACK(siz, 0)); //update footer
     PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1)); //update the last block header
-    return coalesce(bp);
+    bp = coalesce(bp);
+    return bp;
 }
 
 /* 
@@ -158,15 +212,19 @@ int mm_init(void)
     if((heap_head_list = mem_sbrk(HEAP_HEAD_SIZE + (WSIZE << 2))) == (void *) -1) 
         return -1;
     for(int i = 0; i < CLASS; i ++) {
-       // PUTPTR((heap_head_list + SIZE_T_SIZE * i), NULL);
+       PUTADDRESS((heap_head_list + SIZE_T_SIZE * i), NULL);
     }
     
     PUT(heap_head_list + HEAP_HEAD_SIZE, 0);
-    PUT(heap_head_list + HEAP_HEAD_SIZE, PACK(DSIZE, 1));
-    PUT(heap_head_list + HEAP_HEAD_SIZE, PACK(DSIZE, 1));
-    PUT(heap_head_list + HEAP_HEAD_SIZE, PACK(0, 1));
-    if(extendHeap(CHUNKSIZE / WSIZE) == NULL)
+    PUT(heap_head_list + HEAP_HEAD_SIZE + WSIZE, PACK(DSIZE, 1));
+    PUT(heap_head_list + HEAP_HEAD_SIZE + WSIZE * 2, PACK(DSIZE, 1));
+    PUT(heap_head_list + HEAP_HEAD_SIZE + WSIZE * 3, PACK(0, 1));
+    void *bp;
+
+    if((bp = extendHeap(CHUNKSIZE / WSIZE)) == NULL)
         return -1;
+    insertToFreeList(bp);
+    mm_checkheap();
     return 0;
 }
 
@@ -174,16 +232,48 @@ int mm_init(void)
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
+
+#define MIN_BLOCK ALIGN((SIZE_T_SIZE + WSIZE) << 1)
+
 void *mm_malloc(size_t size)
 {
-    int newsize = ALIGN(size + SIZE_T_SIZE);
-    void *p = mem_sbrk(newsize);
-    if (p == (void *)-1)
-	return NULL;
-    else {
-        *(size_t *)p = size;
-        return (void *)((char *)p + SIZE_T_SIZE);
+    int newsize = size + SIZE_T_SIZE;
+    
+    newsize = newsize < MIN_BLOCK ? MIN_BLOCK : ALIGN(newsize);
+
+    int heap_id = searchListID(newsize);
+    for(int i = heap_id; i < 10; i ++) {
+        void *p = (heap_head_list + SIZE_T_SIZE * i);
+        void *bp = GETADDRESS(p);
+        if(bp) {
+            PUTADDRESS(p, GET_NEXT_BLKP(bp));
+            void *bp_head = HDRP(bp);
+            UPDATE_PREV_EXIST(HDRP(NEXT_BLKP(bp)));
+            int tmpsize = GET_SIZE(bp_head);
+            int relsize = tmpsize - newsize;
+            if(relsize >= 24) {
+                PUT(bp_head, PACK(newsize, 1));
+                PUT(FTRP(bp), PACK(newsize, 1));
+                void *next_bp = NEXT_BLKP(bp);
+                PUT(HDRP(next_bp), PACK(relsize, 0));
+                PUT(FTRP(next_bp), PACK(relsize, 0));
+                insertToFreeList(next_bp);
+            } else {
+                PUT(bp_head, PACK(tmpsize, 1));
+                PUT(FTRP(bp), PACK(tmpsize, 1));
+            }
+            return bp;
+        }
     }
+
+    void *bp;
+    if((bp = extendHeap(newsize / WSIZE)) == NULL) return NULL;
+    void * head_bp = HDRP(bp);
+    int siz = GET_SIZE(head_bp);
+    PUT(head_bp, PACK(siz, 1));
+    PUT(FTRP(bp), PACK(siz, 1));
+
+    return bp;
 }
 
 /*
@@ -191,6 +281,13 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+    void * head_ptr = HDRP(ptr);
+    int siz = GET_SIZE(head_ptr);
+    PUT(head_ptr, PACK(siz, 0));
+    PUT(FTRP(ptr), PACK(siz, 0));
+    UPDATE_PREV_EMPTY(HDRP(NEXT_BLKP(ptr)));
+    ptr = coalesce(ptr);
+    insertToFreeList(ptr);
 }
 
 /*
