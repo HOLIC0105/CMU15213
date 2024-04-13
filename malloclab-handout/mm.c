@@ -87,7 +87,7 @@ team_t team = {
 #define HEAP_HEAD_SIZE (SIZE_T_SIZE * CLASS) 
 
 char *heap_head_list;
-char *lst_block_ptr;
+char *last_block_ptl;
 
 static void updateBlock(void *bp, int size, int empty, int alloc) {
     PUT(HDRP(bp), PACK(size,  (empty) | alloc));
@@ -201,7 +201,7 @@ static void * extendHeap(int num) {
     char * bp = mem_sbrk(size);
     if(bp == (void *) -1) return NULL;
     updateBlock(bp, size, GET_PREV_EMPTY(HDRP(bp)), 0);
-    PUT(lst_block_ptr = HDRP(NEXT_BLKP(bp)), PACK(0, 1)); //update the last block header
+    PUT(last_block_ptl = HDRP(NEXT_BLKP(bp)), PACK(0, 1)); //update the last block header
     bp = coalesce(bp);
     return bp;
 }
@@ -219,7 +219,7 @@ int mm_init(void) {
     PUT(heap_head_list + HEAP_HEAD_SIZE, 0);
     PUT(heap_head_list + HEAP_HEAD_SIZE + WSIZE, PACK(DSIZE, 1));
     PUT(heap_head_list + HEAP_HEAD_SIZE + WSIZE * 2, PACK(DSIZE, 1));
-    PUT(lst_block_ptr = heap_head_list + HEAP_HEAD_SIZE + WSIZE * 3, PACK(0, 1));
+    PUT(last_block_ptl = heap_head_list + HEAP_HEAD_SIZE + WSIZE * 3, PACK(0, 1));
     char * bp;
     if((bp = extendHeap(CHUNKSIZE / WSIZE)) == NULL)
         return -1;
@@ -259,8 +259,8 @@ void *mm_malloc(size_t size) {
         }
     }
     char *bp;
-    if(GET_PREV_EMPTY(lst_block_ptr)) {
-        if((bp = extendHeap((newsize - GET_SIZE(lst_block_ptr - 4))/ WSIZE)) == NULL) 
+    if(GET_PREV_EMPTY(last_block_ptl)) {
+        if((bp = extendHeap((newsize - GET_SIZE(last_block_ptl - 4))/ WSIZE)) == NULL) 
             return NULL;
         eraseFromFreeList(bp);
     } else {
@@ -290,50 +290,64 @@ void *mm_realloc(void *ptr, size_t size)
 {
     size = ALIGN(size);
     char * ptr_head = HDRP(ptr);
-    int oldsize = GET_SIZE(ptr_head) - DSIZE;
-    if(oldsize >= size) return ptr;
-    else {
-        char * nxtptr = NEXT_BLKP(ptr);
-        char * nxtptr_head = HDRP(nxtptr);
-        int nxt_block_size = GET_SIZE(nxtptr_head);
-        int nextempty = !GET_ALLOC(nxtptr_head);
-        int sumsize = nxt_block_size + oldsize;
-        if(sumsize >= size && nextempty) {
-            int relsize = sumsize - size;
-            eraseFromFreeList(nxtptr);
-            if(relsize >= 24) {
-                updateBlock(ptr, size + DSIZE, GET_PREV_EMPTY(ptr_head), 1);
-                nxtptr = NEXT_BLKP(ptr);
-                updateBlock(nxtptr, relsize, 0, 0);
-                insertToFreeList(nxtptr);
-            } else updateBlock(ptr, sumsize + DSIZE, GET_PREV_EMPTY(ptr_head), 1);
-            return ptr;
+    int blocksize = GET_SIZE(ptr_head) - DSIZE;
+    if(blocksize >= size) {
+        int relsize = blocksize - size;
+        if(relsize >= 24) {
+            updateBlock(ptr, size + DSIZE, GET_PREV_EMPTY(ptr_head), 1);
+            void * nextptr = NEXT_BLKP(ptr);
+            updateBlock(nextptr, relsize, 0, 0);
+            insertToFreeList(nextptr);
+        }
+        return ptr;
+    } else {
+        char * nextptr = NEXT_BLKP(ptr);
+        char * nextptr_head = HDRP(nextptr);
+        int nxt_block_size = GET_SIZE(nextptr_head);
+        int nextempty = !GET_ALLOC(nextptr_head);
+        if(nextempty) {
+            blocksize += nxt_block_size;
+            eraseFromFreeList(nextptr);
+            updateBlock(ptr, blocksize + DSIZE, GET_PREV_EMPTY(ptr_head), 1);
+            if(blocksize >= size) {
+                int relsize = blocksize - size;
+                if(relsize >= 24) {
+                    updateBlock(ptr, size + DSIZE, GET_PREV_EMPTY(ptr_head), 1);
+                    nextptr = NEXT_BLKP(ptr);
+                    updateBlock(nextptr, relsize, 0, 0);
+                    insertToFreeList(nextptr);
+                }
+                return ptr;
+            }
         }
         int prevempty = GET_PREV_EMPTY(ptr);
-        if(prevempty) {
+        if(prevempty) { 
             char * prevptr = PREV_BLKP(ptr);
             char * prevptr_head = HDRP(prevptr);
             int prev_block_size = GET_SIZE(prevptr_head);
-            sumsize = prev_block_size + oldsize;
-            if(sumsize < size && nextempty) {
-                sumsize += nxt_block_size;
-                if(sumsize >= size) eraseFromFreeList(nxtptr);
-            }    
-            if(sumsize >= size) {
-                int relsize = sumsize - size;
+            blocksize += prev_block_size;
+            if(blocksize >= size) {
+                memcpy(prevptr, ptr, blocksize);
+                int relsize = blocksize - size;
                 eraseFromFreeList(prevptr);
                 if(relsize >= 24) {
                     updateBlock(prevptr, size + DSIZE, 0, 1);
-                    nxtptr = NEXT_BLKP(prevptr);
-                    updateBlock(nxtptr, relsize, 0, 0);
-                    insertToFreeList(nxtptr);
-                } else updateBlock(prevptr, sumsize + DSIZE, 0, 1);
+                    nextptr = NEXT_BLKP(prevptr);
+                    updateBlock(nextptr, relsize, 0, 0);
+                    insertToFreeList(nextptr);
+                } else updateBlock(prevptr, blocksize + DSIZE, 0, 1);
                 return prevptr;
             }
         }
     }
+    if(HDRP(NEXT_BLKP(ptr)) == last_block_ptl) {
+        if(extendHeap((size - blocksize) / WSIZE) == NULL)
+            return NULL;
+        updateBlock(ptr, size + DSIZE, 0, 1);
+        return ptr;
+    }
     void * newptr = mm_malloc(size);
-    memcpy(newptr, ptr, oldsize);
+    memcpy(newptr, ptr, blocksize);
     mm_free(ptr);
     return newptr;
 }
