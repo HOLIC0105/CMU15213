@@ -277,9 +277,9 @@ void *mm_malloc(size_t size)
         if((bp = extendHeap(newsize / WSIZE)) == NULL) return NULL;
     }
     void * head_bp = HDRP(bp);
-    int siz = GET_SIZE(head_bp);
-    PUT(head_bp, PACK(siz, 1));
-    PUT(FTRP(bp), PACK(siz, 1));
+    size = GET_SIZE(head_bp);
+    PUT(head_bp, PACK(size, 1));
+    PUT(FTRP(bp), PACK(size, 1));
     return bp;
 }
 
@@ -289,11 +289,9 @@ void *mm_malloc(size_t size)
 void mm_free(void *ptr)
 {   
     void * head_ptr = HDRP(ptr);
-    int siz = GET_SIZE(head_ptr);
-    int flag = GET_PREV_EMPTY(head_ptr);
-    PUT(head_ptr, PACK(siz, 0));
-    PUT(FTRP(ptr), PACK(siz, 0));
-    if(flag) UPDATE_PREV_EMPTY(head_ptr);
+    int size = GET_SIZE(head_ptr);
+    PUT(head_ptr, PACK(size, GET_PREV_EMPTY(head_ptr)));
+    PUT(FTRP(ptr), PACK(size, 0));
     ptr = coalesce(ptr);
     insertToFreeList(ptr);
 }
@@ -303,19 +301,39 @@ void mm_free(void *ptr)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    void *oldptr = ptr;
-    void *newptr;
-    size_t copySize;
-    
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
-      copySize = size;
-    memcpy(newptr, oldptr, copySize);
-    mm_free(oldptr);
-    return newptr;
+    size = ALIGN(size);
+    void * ptr_head = HDRP(ptr);
+    int oldsize = GET_SIZE(ptr_head) - DSIZE;
+    if(oldsize >= size) return ptr;
+    else {
+        void * nxtptr = NEXT_BLKP(ptr);
+        void * nxtptr_head = HDRP(nxtptr);
+        int nxt_block_size = GET_SIZE(nxtptr_head);
+        int sumsize = nxt_block_size + oldsize;
+        if(sumsize >= size && !GET_ALLOC(nxtptr_head)) {
+            int relsize = sumsize - size;
+            eraseFromFreeList(nxtptr);
+            if(relsize >= 24) {
+                PUT(ptr_head, PACK(size + DSIZE, GET_PREV_EMPTY(ptr_head) | 1));
+                PUT(FTRP(ptr), PACK(size + DSIZE, 1));
+                nxtptr = NEXT_BLKP(ptr);
+                PUT(HDRP(nxtptr), PACK(relsize, 0));
+                PUT(FTRP(nxtptr), PACK(relsize, 0));
+                insertToFreeList(nxtptr);
+            } else {
+                PUT(ptr_head, PACK(sumsize + DSIZE, GET_PREV_EMPTY(ptr_head) | 1));
+                PUT(FTRP(ptr), PACK(sumsize + DSIZE, 1));
+            }
+            return ptr;
+        } else {
+            void * newptr = mm_malloc(size);
+            memcpy(newptr, ptr, oldsize);
+            PUT(ptr_head, PACK(oldsize + DSIZE, GET_PREV_EMPTY(ptr_head)));
+            PUT(FTRP(ptr), PACK(oldsize + DSIZE, 0));
+            mm_free(ptr);
+            return newptr;
+        }
+    }
 }
 
 
