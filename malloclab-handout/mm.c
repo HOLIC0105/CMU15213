@@ -46,7 +46,7 @@ team_t team = {
 
 #define WSIZE       4           //Word and header/footer size (bytes)
 #define DSIZE       8           //Double word size (bytes) 
-#define CHUNKSIZE   (1 << 12)   //Extend heap by this amout (bytes)
+#define CHUNKSIZE   4096  //Extend heap by this amout (bytes)
 
 // Pack a size and allocated bit into a word
 #define PACK(size, alloc)           ((size) | (alloc))
@@ -234,9 +234,15 @@ int mm_init(void) {
  */
 
 #define MIN_BLOCK ALIGN((SIZE_T_SIZE + WSIZE) << 1)
-
+static size_t adjust_alloc_size(size_t size) {
+    if(size >= 112 && size < 128) return 128;
+    if(size >= 448 && size < 512) return 512;
+    if(size >= 1000 && size < 1024) return 1024;
+    if(size >= 2000 && size < 2048) return 2048;
+    return size;
+}
 void *mm_malloc(size_t size) {
-    int newsize = size + (WSIZE << 1);
+    int newsize = adjust_alloc_size(size) + (WSIZE << 1);
     newsize = newsize < MIN_BLOCK ? MIN_BLOCK : ALIGN(newsize);
     int heap_id = searchListID(newsize);
     int num = 0;
@@ -259,7 +265,7 @@ void *mm_malloc(size_t size) {
         int tmpsize = GET_SIZE(bp_head);
         int relsize = tmpsize - newsize;
         if(relsize >= 24) {
-            if(size <= 96) {
+            if(size < 96) {
                 updateBlock(bp, newsize, 0, 1);
                 void *next_bp = NEXT_BLKP(bp);
                 updateBlock(next_bp, relsize, 0, 0);
