@@ -54,6 +54,7 @@
     "algorithm": "c",
     "limits": "c",
     "numeric": "c",
-    "complex": "c"
+    "complex": "c",
+    "csapp.h": "c"
   }
 }
