@@ -13,10 +13,12 @@ typedef struct{
     string port;
     string path;
 }url_t;
-void * doit(void * tmpfd);
-int parse(rio_t client_rio, url_t * url_info, string header_info);
-int  parse_url(char *uri, url_t * url_info);
-int parse_header(rio_t* rio, string header_info, string host);
+static char buf[MAXLINE << 2];
+static string method, url, version;
+static void * doit(void * tmpfd);
+static int parse(rio_t client_rio, url_t * url_info, string header_info);
+static int  parse_url(char *uri, url_t * url_info);
+static int parse_header(rio_t* rio, string header_info, string host);
 int main(int argc, char *argv[]) {
     Signal(SIGPIPE, SIG_IGN);
     int listenfd, * connfd;
@@ -40,9 +42,7 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
-static char buf[MAXLINE << 2];
-static string method, url, version;
-void * doit(void * tmpfd) {
+static void * doit(void * tmpfd) {
     pthread_detach(pthread_self());
     int client_fd = *((int *) tmpfd);
     free(tmpfd);
@@ -80,24 +80,20 @@ void * doit(void * tmpfd) {
     close(client_fd);
     return NULL;
 }
-int parse(rio_t client_rio, url_t * url_info, string header_info) {
-    if(!rio_readlineb(&client_rio, buf, MAXLINE)) {
+static int parse(rio_t client_rio, url_t * url_info, string header_info) {
+    if(!rio_readlineb(&client_rio, buf, MAXLINE)) 
         fprintf(stderr, "Parse request line error: %s\n", strerror(errno));
-        return -1;
-    }
-    if(sscanf(buf, "%s %s %s", method, url, version) != 3) {
+    else if(sscanf(buf, "%s %s %s", method, url, version) != 3) 
         fprintf(stderr, "Parse request line error: %s\n", strerror(errno));
-        return -1;
-    }
-    if(strcasecmp(method, "GET")) {
+    else if(strcasecmp(method, "GET")) 
         fprintf(stderr, "Proxy does not implement the method");
-        return -1;
+    else if(!parse_url(url, url_info)) {
+        parse_header(&client_rio, header_info, url_info->host);
+        return 0;
     }
-    if(parse_url(url, url_info) == -1) return -1;
-    parse_header(&client_rio, header_info, url_info->host);
-    return 0;
+    return -1;
 }
-int parse_url(char * url, url_t * url_info) 
+static int parse_url(char * url, url_t * url_info) 
 {
     if(strncasecmp(url, "http://", 7)) {
         fprintf(stderr, "Not http protocol: %s\n", url);
@@ -122,7 +118,7 @@ int parse_url(char * url, url_t * url_info)
     }
     return 0;
 }
-int parse_header(rio_t* rio, string header_info, string host) {
+static int parse_header(rio_t* rio, string header_info, string host) {
     string buf;
     int flag = 0;
     while(1) {
