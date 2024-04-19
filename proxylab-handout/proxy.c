@@ -10,10 +10,14 @@ typedef struct{
     string port;
     string path;
 }url_t;
+
 static void * doit(void * tmpfd);
 static int parse(string url, rio_t client_rio, url_t * url_info, string header_info);
 static int  parse_url(char *uri, url_t * url_info);
 static int parse_header(rio_t* rio, string header_info, string host);
+
+Cache_t cache;
+
 int main(int argc, char *argv[]) {  
     Signal(SIGPIPE, SIG_IGN);
     int listenfd, * connfd;
@@ -71,6 +75,10 @@ static void * doit(void * tmpfd) {
         close(client_fd);
         return NULL;
     }
+    int cache_block_id;
+    if((cache_block_id = IdInCache(&cache, url)) != -1) {
+        
+    }
     if(parse(url, client_rio, &url_info, header_info) == -1) {
         close(client_fd);
         return NULL;
@@ -106,7 +114,7 @@ static void * doit(void * tmpfd) {
             return NULL;
         }
     }
-close(client_fd);
+    close(client_fd);
     close(server_fd);
     return NULL;
 }
