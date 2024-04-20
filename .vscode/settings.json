@@ -55,6 +55,7 @@
     "limits": "c",
     "numeric": "c",
     "complex": "c",
-    "csapp.h": "c"
+    "csapp.h": "c",
+    "threadpool.h": "c"
   }
 }

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "threadpool.h"
 #include "cache.h"
 #include "csapp.h"
 /* You won't lose style points for including this long line in your code */
@@ -17,11 +18,12 @@ static int  parse_url(char *uri, url_t * url_info);
 static int parse_header(rio_t* rio, string header_info, string host);
 
 static Cache_t cache;
-
+static Threadpool_t threadpool;
 int main(int argc, char *argv[]) {  
     Signal(SIGPIPE, SIG_IGN);
     CacheInit(&cache);
-    int listenfd, * connfd;
+    ThreadpoolInit(&threadpool, doit);
+    int listenfd, connfd;
     char hostname[MAXLINE], port[MAXLINE];
     socklen_t clientlen;
     struct sockaddr_storage clientaddr;
@@ -30,32 +32,23 @@ int main(int argc, char *argv[]) {
 	    exit(1);
     }
     listenfd = Open_listenfd(argv[1]);
-    pthread_t tpid;
     while(1) {
         clientlen = sizeof(clientaddr);
-        connfd = (int *) malloc (sizeof(int));
-        *connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); 
-        if(*connfd < 0) {
+        connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen); 
+        if(connfd < 0) {
             fprintf(stderr, "Accept error\n");
-            free(connfd);
             continue;
          }
         Getnameinfo((SA *) &clientaddr, clientlen, 
                     hostname, MAXLINE, port, MAXLINE, 0);
         printf("Accepted connection from (%s, %s)\n", hostname, port);
-        if(pthread_create(&tpid, NULL, doit, connfd) == -1) {
-            fprintf(stderr, "Pthread dose not create\n");
-            free(connfd);
-            continue;
-        }       
+        ThreadpoolAppend(&threadpool, connfd);
     }
     CacheDestroy(&cache);
     return 0;
 }
 static void * doit(void * tmpfd) {
-    pthread_detach(pthread_self());
     int client_fd = *((int *) tmpfd);
-    free(tmpfd);
     rio_t client_rio;
     url_t url_info; 
     string header_info;
