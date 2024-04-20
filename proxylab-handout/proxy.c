@@ -16,10 +16,11 @@ static int parse(string url, rio_t client_rio, url_t * url_info, string header_i
 static int  parse_url(char *uri, url_t * url_info);
 static int parse_header(rio_t* rio, string header_info, string host);
 
-Cache_t cache;
+static Cache_t cache;
 
 int main(int argc, char *argv[]) {  
     Signal(SIGPIPE, SIG_IGN);
+    CacheInit(&cache);
     int listenfd, * connfd;
     char hostname[MAXLINE], port[MAXLINE];
     socklen_t clientlen;
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]) {
             continue;
         }       
     }
+    CacheDestroy(&cache);
     return 0;
 }
 static void * doit(void * tmpfd) {
@@ -75,9 +77,9 @@ static void * doit(void * tmpfd) {
         close(client_fd);
         return NULL;
     }
-    int cache_block_id;
-    if((cache_block_id = IdInCache(&cache, url)) != -1) {
-        
+    if(UrlInCache(&cache, url, client_fd) != -1) {
+        close(client_fd);
+        return NULL;
     }
     if(parse(url, client_rio, &url_info, header_info) == -1) {
         close(client_fd);
@@ -100,6 +102,7 @@ static void * doit(void * tmpfd) {
         return NULL;
     }
     int readlen;
+    char src[MAX_OBJECT_SIZE], len = 0;
     while((readlen = rio_readnb(&server_rio, buf, MAXLINE))) {
         if(readlen < 0) {
             fprintf(stderr, "Read server response error\n");
@@ -113,7 +116,12 @@ static void * doit(void * tmpfd) {
             close(server_fd);
             return NULL;
         }
+        if(len != -1 && len + readlen < MAX_OBJECT_SIZE) {
+            len += readlen;
+            sprintf(src, "%s", buf);
+        } else len = -1;
     }
+    InsertCache(&cache, url, src);
     close(client_fd);
     close(server_fd);
     return NULL;
