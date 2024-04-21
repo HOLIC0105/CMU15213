@@ -30,6 +30,7 @@ void ThreadpoolInit(Threadpool_t * threadpool, void * (*task)(void *)) {
 }
 
 void ThreadpoolAppend(Threadpool_t * threadpool, int fd) {
+  pthread_mutex_lock(&threadpool->queuelock_);
   sem_post(&threadpool->queuestat_);
   if(threadpool->tasklist_front == NULL) {
     threadpool->tasklist_front = (struct Tasklist_t *)malloc(sizeof(struct Tasklist_t));
@@ -41,4 +42,5 @@ void ThreadpoolAppend(Threadpool_t * threadpool, int fd) {
       (struct Tasklist_t *)malloc(sizeof(struct Tasklist_t));
     *threadpool->tasklist_back = (struct Tasklist_t){NULL, fd};  
   }
+  pthread_mutex_unlock(&threadpool->queuelock_);
 }
