@@ -28,7 +28,6 @@ void ThreadpoolInit(Threadpool_t * threadpool, void * (*task)(void *)) {
     } else printf("Pthread %d success create\n", i);
   }
 }
-
 void ThreadpoolAppend(Threadpool_t * threadpool, int fd) {
   pthread_mutex_lock(&threadpool->queuelock_);
   sem_post(&threadpool->queuestat_);
